@@ -1,14 +1,16 @@
 package com.github.brianmartin.wiki
 
 import kba._
-import org.apache.thrift.transport.TFileTransport
+
 import org.apache.thrift.protocol.TBinaryProtocol
+import org.apache.thrift.transport.TIOStreamTransport
+
 import java.io.BufferedOutputStream
 import java.io.File
-import org.apache.thrift.transport.TIOStreamTransport
 import java.io.FileOutputStream
 import java.io.FileInputStream
 import java.io.BufferedInputStream
+
 
 object Runner {
 
@@ -36,20 +38,37 @@ object Runner {
 
     
     val file = new File("/Users/brian/wrk-umass/wiki-links-thrift/thrifting1/test.out")
-    val bufferedOut = new BufferedOutputStream(new FileOutputStream(file), 2048)
-    val binaryOut = new TBinaryProtocol(new TIOStreamTransport(bufferedOut))
+    val (outStream, outProto) = ThriftSerializerFactory.getWriter(file)
     
-    s.write(binaryOut)
-    bufferedOut.flush()
-    bufferedOut.close()
+    s.write(outProto)
     
-    val bufferedIn = new BufferedInputStream(new FileInputStream(file), 2048)
-    val binaryIn = new TBinaryProtocol(new TIOStreamTransport(bufferedIn))
+    outStream.flush()
+    outStream.close()
     
-    val sIn = StreamTime.decode(binaryIn)
-    println(sIn.epochTicks)
-    println(sIn.zuluTimestamp)
+    val (inStream, inProto) = ThriftSerializerFactory.getReader(file)
+    
+    val time = StreamTime.decode(inProto)
+    println(time.epochTicks)
+    println(time.zuluTimestamp)
+    
+    inStream.close()
 
   }
 
+}
+
+object ThriftSerializerFactory {
+  
+  def getWriter(f: File) = {
+    val stream = new BufferedOutputStream(new FileOutputStream(f), 2048)
+    val protocol= new TBinaryProtocol(new TIOStreamTransport(stream))
+    (stream, protocol)
+  }
+  
+  def getReader(f: File) = {
+    val stream = new BufferedInputStream(new FileInputStream(f), 2048)
+    val protocol = new TBinaryProtocol(new TIOStreamTransport(stream))
+    (stream, protocol)
+  }
+  
 }
