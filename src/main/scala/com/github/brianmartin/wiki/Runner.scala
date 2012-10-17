@@ -44,6 +44,11 @@ object Runner {
     println(time.zuluTimestamp)
     
     inStream.close()
+    
+    val htmlFile = new File("/Users/brian/wrk-umass/wiki-links-thrift/wiki-link-chunk-000000/pages/000000/377")
+    val htmlStr  = Source.fromFile(htmlFile).getLines().mkString("\n")
+    
+    println(CleanseHTML(htmlStr))
 
   }
 
