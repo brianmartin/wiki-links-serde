@@ -19,8 +19,7 @@ class ThriftSpec extends FlatSpec {
 	    urlOriginal = "http:/:w" +
 	    		"/somewhere.com/page.html",
 	    content = PageContentItem(
-	        raw = "raw html",
-	        encoding = "UTF-8"
+	        raw = "raw html"
 	    )
 	 )
 
