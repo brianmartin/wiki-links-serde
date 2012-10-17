@@ -31,13 +31,30 @@ object Runner {
   
   def main(args: Array[String]): Unit = {
     
-    val htmlPath = "/Users/brian/wrk-umass/wiki-links-thrift/wiki-link-chunk-000000/pages/000000/377"
-    val rawHTML = Source.fromFile(htmlPath).getLines().mkString("\n") 
+    val argFile = new File(args(0))
     
-    ///////////////////////////////////////////
+    if (argFile.isDirectory())
+	  for ((f,i) <- argFile.listFiles().zipWithIndex)
+	    serialize(i, f)
+    else
+      serialize(0, argFile)
     
-    val tmpFile = File.createTempFile("tmp", ".out")
-      
+  }
+  
+  def serialize(id: Int, inFile: File): Unit = {
+    
+    val outFile = new File(inFile.getAbsolutePath() + ".thrift")
+    outFile.createNewFile()
+    
+	serialize(
+	    id = 0,
+	    rawHTML = Source.fromFile(inFile).getLines().mkString("\n"),
+	    outFile = outFile
+	  )
+  }
+  
+  def serialize(id: Int, rawHTML: String, outFile: File): Unit = {
+    
 	val s = WikiLinkItem(
 	   docId = 1,
 	   urlHash = "hash",
@@ -49,20 +66,19 @@ object Runner {
 	   )
 	)
 	
-     val (outStream, outProto) = ThriftSerializerFactory.getWriter(tmpFile)
+    val (outStream, outProto) = ThriftSerializerFactory.getWriter(outFile)
     
-     s.write(outProto)
+    s.write(outProto)
     
-     outStream.flush()
-     outStream.close()
+    outStream.flush()
+    outStream.close()
     
     ///////////////////////////////////////////
     
-    val (inStream, inProto) = ThriftSerializerFactory.getReader(tmpFile)
+    val (inStream, inProto) = ThriftSerializerFactory.getReader(outFile)
     
     val wli = WikiLinkItem.decode(inProto)
     
-    println(wli.content.dom)
     println(wli.docId)
     println(wli.content.cleansed)
     
