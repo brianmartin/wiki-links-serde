@@ -8,20 +8,21 @@ import java.io.File
 
 object implicits {
   
-  val charset = Charset.forName("UTF-8");
-  val cd = charset.newDecoder()
-  val ce = charset.newEncoder()
-    
-  implicit def string2bytebuffer(str: String): ByteBuffer = {
-    ce.encode(ByteBuffer.wrap(str.getBytes()).asCharBuffer)
-  }
-  implicit def stringOpt2bytebufferOpt(strOpt: Option[String]): Option[ByteBuffer] = {
-    strOpt match {
-      case Some(str) => Some(ce.encode(ByteBuffer.wrap(str.getBytes).asCharBuffer))
-      case None => None
-    }
-  }
-  implicit def bytes2bytebuffer(bytes: Array[Byte]): ByteBuffer = ByteBuffer.wrap(bytes)
+//  val charset = Charset.forName("UTF-8");
+//  val cd = charset.newDecoder()
+//  val ce = charset.newEncoder()
+//    
+//  implicit def string2bytebuffer(str: String): ByteBuffer = {
+//    ce.encode(ByteBuffer.wrap(str.getBytes()).asCharBuffer)
+//  }
+//  implicit def stringOpt2bytebufferOpt(strOpt: Option[String]): Option[ByteBuffer] = {
+//    strOpt match {
+//      case Some(str) => Some(ce.encode(ByteBuffer.wrap(str.getBytes).asCharBuffer))
+//      case None => None
+//    }
+//  }
+//  implicit def bytes2bytebuffer(bytes: Array[Byte]): ByteBuffer = ByteBuffer.wrap(bytes)
+  
 }
 
 object Runner {

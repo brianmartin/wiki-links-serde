@@ -33,18 +33,15 @@ class ThriftSpec extends FlatSpec {
   
   it should "deserialize" in {
     
-    val charset = Charset.forName("UTF-8");
-	val cd = charset.newDecoder()
-    
     val (inStream, inProto) = ThriftSerializerFactory.getReader(tmpFile)
     
     val wli = WikiLinkItem.decode(inProto)
-    println(wli.docId)
-	
-    cd.reset()
-    println(cd.decode(wli.content.raw))
     
     inStream.close()
+    
+//    println(wli.docId)
+//    println(wli.content.raw)
+    
   }
 
 }
@@ -53,9 +50,7 @@ class ThriftSpec extends FlatSpec {
 class CleanDOMSpec extends FlatSpec {
   
   "The DOM cleanser" should "add missing tags" in {
-	val tmpFile = File.createTempFile("tmp", ".out")
-	val pw = new PrintWriter(tmpFile)
-	pw.println("""
+	val dirty = """
 	    <html>
 	      <head>
 	      </head>
@@ -63,18 +58,18 @@ class CleanDOMSpec extends FlatSpec {
 	        <p>
 	        </p>
 	        </p>
-    """)
-    
-    pw.close()
-    
-    val cleanDom = CleanDOM(tmpFile.getAbsolutePath())
-    assert(cleanDom == 
+    """
+	  
+	val expectedClean = 
 """<html>
   <head></head>
   <body>
     <p> </p>
   </body>
-</html>""")
+</html>"""
+    
+    val clean = CleanDOM(dirty).get
+    assert(clean == expectedClean)
     
   }
 }
