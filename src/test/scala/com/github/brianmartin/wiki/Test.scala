@@ -1,7 +1,6 @@
 package com.github.brianmartin.wiki
 
 import com.github.brianmartin.wiki._
-import com.github.brianmartin.wiki.implicits._
 import org.scalatest.FlatSpec
 import kba.wiki._
 import java.io.File

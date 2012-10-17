@@ -8,8 +8,6 @@ import java.io.File
 
 object Runner {
   
-  import implicits._
-  
   def main(args: Array[String]): Unit = {
     
     val argFile = new File(args(0))
