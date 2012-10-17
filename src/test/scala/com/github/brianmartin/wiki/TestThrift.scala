@@ -6,16 +6,18 @@ import org.scalatest.FlatSpec
 import kba.wiki._
 import java.io.File
 import java.nio.charset.Charset
+import java.io.PrintWriter
 
 class ThriftSpec extends FlatSpec {
   
   val tmpFile = File.createTempFile("tmp", ".out")
   
-  "A WikiLinkItem" should "be serializable" in {
+  "A WikiLinkItem" should "serialize" in {
 	 val s = WikiLinkItem(
 	    docId = 1,
 	    urlHash = "hash",
-	    urlOriginal = "http://somewhere.com/page.html",
+	    urlOriginal = "http:/:w" +
+	    		"/somewhere.com/page.html",
 	    content = PageContentItem(
 	        raw = "raw html",
 	        encoding = "UTF-8"
@@ -30,7 +32,7 @@ class ThriftSpec extends FlatSpec {
      outStream.close()
   }
   
-  "A WikiLinkItem" should "be deserializable" in {
+  it should "deserialize" in {
     
     val charset = Charset.forName("UTF-8");
 	val cd = charset.newDecoder()
@@ -46,4 +48,34 @@ class ThriftSpec extends FlatSpec {
     inStream.close()
   }
 
+}
+
+
+class CleanDOMSpec extends FlatSpec {
+  
+  "The DOM cleanser" should "add missing tags" in {
+	val tmpFile = File.createTempFile("tmp", ".out")
+	val pw = new PrintWriter(tmpFile)
+	pw.println("""
+	    <html>
+	      <head>
+	      </head>
+	      <body>
+	        <p>
+	        </p>
+	        </p>
+    """)
+    
+    pw.close()
+    
+    val cleanDom = CleanDOM(tmpFile.getAbsolutePath())
+    assert(cleanDom == 
+"""<html>
+  <head></head>
+  <body>
+    <p> </p>
+  </body>
+</html>""")
+    
+  }
 }
