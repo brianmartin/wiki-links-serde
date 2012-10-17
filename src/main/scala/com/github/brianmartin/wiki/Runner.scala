@@ -1,16 +1,8 @@
 package com.github.brianmartin.wiki
 
 import kba._
-
-import org.apache.thrift.protocol.TBinaryProtocol
-import org.apache.thrift.transport.TIOStreamTransport
-
-import java.io.BufferedOutputStream
 import java.io.File
-import java.io.FileOutputStream
-import java.io.FileInputStream
-import java.io.BufferedInputStream
-
+import scala.io.Source
 
 object Runner {
 
@@ -55,20 +47,4 @@ object Runner {
 
   }
 
-}
-
-object ThriftSerializerFactory {
-  
-  def getWriter(f: File) = {
-    val stream = new BufferedOutputStream(new FileOutputStream(f), 2048)
-    val protocol= new TBinaryProtocol(new TIOStreamTransport(stream))
-    (stream, protocol)
-  }
-  
-  def getReader(f: File) = {
-    val stream = new BufferedInputStream(new FileInputStream(f), 2048)
-    val protocol = new TBinaryProtocol(new TIOStreamTransport(stream))
-    (stream, protocol)
-  }
-  
 }
