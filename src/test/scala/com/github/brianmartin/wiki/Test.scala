@@ -14,8 +14,7 @@ class ThriftSpec extends FlatSpec {
   "A WikiLinkItem" should "serialize" in {
 	 val s = WikiLinkItem(
 	    docId = 1,
-	    urlHash = "hash",
-	    urlOriginal = "http:/:w" +
+	    url = "http:/:w" +
 	    		"/somewhere.com/page.html",
 	    content = PageContentItem(
 	        raw = "raw html"
