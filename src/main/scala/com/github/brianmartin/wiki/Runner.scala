@@ -68,14 +68,14 @@ object Runner {
     
     ///////////////////////////////////////////
     
-    val (inStream, inProto) = ThriftSerializerFactory.getReader(outFile)
+    //val (inStream, inProto) = ThriftSerializerFactory.getReader(outFile)
     
-    val wli = WikiLinkItem.decode(inProto)
+    //val wli = WikiLinkItem.decode(inProto)
     
-    println(wli.docId)
-    println(wli.content.articleText)
+    //println(wli.docId)
+    //println(wli.content.articleText)
     
-    inStream.close()
+    //inStream.close()
 
   }
   
