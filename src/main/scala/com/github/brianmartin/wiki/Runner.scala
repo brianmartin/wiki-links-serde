@@ -14,32 +14,28 @@ object Runner {
     // can be the pages/ directory or a single file for testing
     val argFile = new File(args(0)) 
     val googleDir = new File(args(1))
+    val thriftDir = new File(args(2))
     
-    if (argFile.isDirectory()) {
-      // for all the files in each chunk that don't have an extension:
-      for (d <- argFile.listFiles().filter(_.isDirectory())) {
-	    for ((pageFile,i) <- d.listFiles().filter(f => !f.getName().contains(".")).map { f => f -> f.getName.toInt } ) {
-	      val googleFile = new File(googleDir.getAbsolutePath() + ("/%09d" format i))
-	      serialize(i, pageFile, googleFile)
-		}
-      }
+    if (!googleDir.isDirectory() ||
+        !thriftDir.isDirectory())
+      println("Usage: ./run pages-dir google-dir thrift-dir")
+    
+    // for all the files in each chunk that don't have an extension:
+    for (d <- argFile.listFiles().filter(_.isDirectory())) {
+      for ((pageFile,i) <- d.listFiles().filter(f => !f.getName().contains(".")).map { f => f -> f.getName.toInt } ) {
+        val googleFile = new File(googleDir.getAbsolutePath() + ("/%09d" format i))
+        val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%09d.thrift" format i))
+	    thriftFile.createNewFile()
+        serialize(i, pageFile, googleFile, thriftFile)
+	  }
     }
-    else {
-      val id = argFile.getName().toInt
-      serialize(id, argFile, googleFile = new File(googleDir.getAbsolutePath() + ("%09d" format id)))
-    } 
-    
   }
   
-  def serialize(id: Int, pageFile: File, googleFile: File): Unit = {
-    
-    val outFile = new File(pageFile.getAbsolutePath() + ".thrift")
-    outFile.createNewFile()
-    
+  def serialize(id: Int, pageFile: File, googleFile: File, thriftFile: File): Unit = {
 	serialize(
 	    id = 0,
 	    rawHTML = Source.fromFile(pageFile).getLines().mkString("\n"),
-	    outFile = outFile,
+	    outFile = thriftFile,
 	    googleAnnotations = googleAnnotations(googleFile)
 	  )
   }
