@@ -1,6 +1,7 @@
 import sbt._
 import sbt.Keys._
 import com.twitter.sbt._
+import com.github.retronym.SbtOneJar.oneJarSettings
 
 object Thrifting1Build extends Build {
   val finagleVersion = "5.0.0"
@@ -11,6 +12,7 @@ object Thrifting1Build extends Build {
     settings = Project.defaultSettings ++ 
       StandardProject.newSettings ++
       CompileThriftScrooge.newSettings ++ 
+      oneJarSettings ++ 
       Seq(
         name := "Thrifting stage-1 for Wiki Link",
         organization := "com.github.brianmartin",
