@@ -23,8 +23,10 @@ object Runner {
         !thriftDir.isDirectory())
       println("Usage: ./run pages-chunk-dir google-dir thrift-dir")
     
+    println("Chunk dir: " + pagesChunkDir.getAbsolutePath())
     // for all the files in each chunk that don't have an extension:
     for ((pageFile,i) <- pagesChunkDir.listFiles().filter(f => !f.getName().contains(".")).map { f => f -> f.getName.toInt } ) {
+      println(i + "\t" + pageFile.getAbsolutePath())
       try {
         val googleFile = new File(googleDir.getAbsolutePath() + ("/%09d" format i))
         val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%09d.thrift" format i))
@@ -34,7 +36,7 @@ object Runner {
         case e => {
           println("skipping " + i)
           println(e.getCause())
-          println(e.getStackTrace())
+          println(e.getMessage())
           println(e.getStackTraceString)
         }
       }
@@ -43,23 +45,22 @@ object Runner {
   }
   
   
-  def readFile(f: File): String = {
-    val stream = new FileInputStream(f)
-    try {
-      val fc = stream.getChannel();
-      val bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size())
-      return Charset.defaultCharset().decode(bb).toString()
-    }
-    finally {
-      stream.close()
-    } 
+  def readFileString(f: File): String = {
+    val bb = readRawFile(f)
+    val str = Charset.defaultCharset().decode(bb).toString()
+    bb.rewind()
+    str
   }
   
   def readRawFile(f: File): ByteBuffer = {
+    
     val stream = new FileInputStream(f)
     try {
-      val fc = stream.getChannel();
-      val bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size())
+      val fc = stream.getChannel()
+      val bArray = Array.ofDim[Byte](f.length.toInt)
+      val bb = ByteBuffer.wrap(bArray)
+      fc.read(bb)
+      bb.rewind()
       return bb
     }
     finally {
@@ -82,6 +83,7 @@ object Runner {
   def serialize(id: Int, rawHTML: ByteBuffer, outFile: File, googleAnnotations: (String, Seq[Mention], Seq[RareWord])): Unit = {
     
     val html = Charset.defaultCharset().decode(rawHTML).toString()
+    rawHTML.rewind()
     
 	val s = WikiLinkItem(
 	   docId = id,
@@ -115,7 +117,7 @@ object Runner {
     var mentions = ListBuffer[Mention]()
     var rareWords = ListBuffer[RareWord]()
     
-    for (line <- readFile(googleFile).split("\n")) {
+    for (line <- readFileString(googleFile).split("\n")) {
       line match {
         case URLMatch(_url) => { url = _url }
         case MentionMatch(text, offset, url) =>  { mentions += Mention(wikiUrl = url, anchorText = text, rawTextOffset = offset.toInt) }

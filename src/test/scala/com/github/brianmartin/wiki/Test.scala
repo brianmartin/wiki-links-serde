@@ -2,9 +2,10 @@ package com.github.brianmartin.wiki
 
 import com.github.brianmartin.wiki._
 import org.scalatest.FlatSpec
-import kba.wiki._
+import edu.umass.cs.iesl.wiki._
 import java.io.File
 import java.nio.charset.Charset
+import java.nio.ByteBuffer
 import java.io.PrintWriter
 
 class ThriftSpec extends FlatSpec {
@@ -14,10 +15,9 @@ class ThriftSpec extends FlatSpec {
   "A WikiLinkItem" should "serialize" in {
 	 val s = WikiLinkItem(
 	    docId = 1,
-	    url = "http:/:w" +
-	    		"/somewhere.com/page.html",
+	    url = "http://somewhere.com/page.html",
 	    content = PageContentItem(
-	        raw = "raw html"
+	        raw = ByteBuffer.wrap("raw html".getBytes)
 	    )
 	 )
 
@@ -36,9 +36,6 @@ class ThriftSpec extends FlatSpec {
     val wli = WikiLinkItem.decode(inProto)
     
     inStream.close()
-    
-//    println(wli.docId)
-//    println(wli.content.raw)
     
   }
 
