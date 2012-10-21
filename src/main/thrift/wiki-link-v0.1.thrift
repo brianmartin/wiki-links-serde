@@ -1,9 +1,9 @@
-namespace java kba.wiki
-namespace py kba.wiki
+namespace java edu.umass.cs.iesl.wiki
+namespace py edu.umass.cs.iesl.wiki
 
 struct PageContentItem {
-  // original download, raw byte array
-  1: string raw, 
+  // original download
+  1: binary raw, 
   
   // all visible text, e.g. from boilerpipe 1.2.0 KeepEverything
   2: optional string fullText, 
@@ -12,8 +12,7 @@ struct PageContentItem {
   3: optional string articleText, 
 
   // a correctly parsed and reformatted HTML version of raw with each
-  // HTML tag on its own line separate from lines with visible text,
-  // made with, e.g., BeautifulSoup(raw).prettify()
+  // HTML tag on its own line
   4: optional string dom 
 }
 
@@ -41,7 +40,7 @@ struct WikiLinkItem {
   
   // the original URL string obtain from some source
   2: string url, 
-
+  
   // primary content
   3: PageContentItem content,   
   

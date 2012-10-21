@@ -1,6 +1,6 @@
 package com.github.brianmartin.wiki
 
-import kba.wiki._
+import edu.umass.cs.iesl.wiki._
 import java.nio.ByteBuffer
 import io.Source
 import java.nio.charset.Charset
@@ -33,6 +33,8 @@ object Runner {
       } catch {
         case e => {
           println("skipping " + i)
+          println(e.getCause())
+          println(e.getStackTrace())
           println(e.getStackTraceString)
         }
       }
@@ -52,29 +54,43 @@ object Runner {
       stream.close()
     } 
   }
+  
+  def readRawFile(f: File): ByteBuffer = {
+    val stream = new FileInputStream(f)
+    try {
+      val fc = stream.getChannel();
+      val bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size())
+      return bb
+    }
+    finally {
+      stream.close()
+    } 
+  }
 
   def serialize(id: Int, pageFile: File, googleFile: File, thriftFile: File): Unit = {
     
-    val rawHTML = readFile(pageFile)
+    val rawHTML = readRawFile(pageFile)
     
 	serialize(
-	    id = 0,
+	    id = id,
 	    rawHTML = rawHTML,
 	    outFile = thriftFile,
 	    googleAnnotations = googleAnnotations(googleFile)
 	  )
   }
   
-  def serialize(id: Int, rawHTML: String, outFile: File, googleAnnotations: (String, Seq[Mention], Seq[RareWord])): Unit = {
+  def serialize(id: Int, rawHTML: ByteBuffer, outFile: File, googleAnnotations: (String, Seq[Mention], Seq[RareWord])): Unit = {
+    
+    val html = Charset.defaultCharset().decode(rawHTML).toString()
     
 	val s = WikiLinkItem(
 	   docId = id,
 	   url = googleAnnotations._1,
 	   content = PageContentItem(
 	       raw = rawHTML,
-	       fullText = FullText(rawHTML),
-	       articleText = ArticleText(rawHTML),
-	       dom = CleanDOM(rawHTML)
+	       fullText = FullText(html),
+	       articleText = ArticleText(html),
+	       dom = CleanDOM(html)
 	   ),
 	   rareWords = googleAnnotations._3,
 	   mentions = googleAnnotations._2
@@ -101,18 +117,9 @@ object Runner {
     
     for (line <- readFile(googleFile).split("\n")) {
       line match {
-        case URLMatch(_url) => {
-          //println("URL: |" + url)
-          url = _url
-        }
-        case MentionMatch(text, offset, url) =>  {
-          //println("Mention : " + text + " | " + offset + " | " + url)
-		  mentions += Mention(wikiUrl = url, anchorText = text, rawTextOffset = offset.toInt)
-        }
-        case TokenMatch(word, offset) =>  {
-          //println("Token: " + word + " | " + offset)
-          rareWords += RareWord(word, offset.toInt)
-        }
+        case URLMatch(_url) => { url = _url }
+        case MentionMatch(text, offset, url) =>  { mentions += Mention(wikiUrl = url, anchorText = text, rawTextOffset = offset.toInt) }
+        case TokenMatch(word, offset) =>  { rareWords += RareWord(word, offset.toInt) }
         case _ => ()
       }
     }
