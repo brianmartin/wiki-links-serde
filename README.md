@@ -1,4 +1,16 @@
 
+Building
+========
+
+To build an uberjar:
+
+```
+$ ./sbt11 package-dist
+```
+
+The uberjar (with all dependencies included) will be in
+``target/scala-2.9.2/thrifting-stage-1-for-wiki-link_2.9.2-0.1-SNAPSHOT-one-jar.jar``.
+
 Viewing serialized files
 ========================
 
