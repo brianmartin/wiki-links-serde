@@ -9,17 +9,17 @@ object RerunSizeZeroThrifts {
   def main(args: Array[String]): Unit = {
 
     val idsToRerun: Seq[Int] = readFileString(new File(args(0))).split("\n").map(_.toInt)
-    val pagesDir = new File(args(2))
-    val googleDir = new File(args(3))
-    val thriftDir = new File(args(4))
+    val pagesDir = new File(args(1))
+    val googleDir = new File(args(2))
+    val thriftDir = new File(args(3))
 
     if (!googleDir.isDirectory() ||
         !thriftDir.isDirectory())
-      println("Usage: ./run pages-chunk-dir google-dir thrift-dir")
+      println("Usage: ./run OWPL-id-file pages-dir google-dir thrift-dir")
 
     for (id <- idsToRerun) {
       try {
-        val pageFile = new File(pagesDir.getAbsolutePath() + "/" + id)
+        val pageFile = new File(pagesDir.getAbsolutePath() + "/%06d/%d".format(id / 1000,id))
         println(id + "\t" + pageFile.getAbsolutePath())
         val googleFile = new File(googleDir.getAbsolutePath() + ("/%09d" format id))
         val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%09d.thrift" format id))
