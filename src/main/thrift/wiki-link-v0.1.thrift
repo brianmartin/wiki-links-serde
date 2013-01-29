@@ -16,13 +16,27 @@ struct PageContentItem {
   4: optional string dom 
 }
 
+struct Context {
+
+  1: string left,
+
+  2: string right,
+
+  3: string middle
+
+}
+
 struct Mention {
 
   1: string wiki_url,
-  
+
   2: string anchor_text,
-  
-  3: i32 raw_text_offset
+
+  3: i32 raw_text_offset,
+
+  4: optional Context context,
+
+  5: optional string freebase_id
 
 }
 
