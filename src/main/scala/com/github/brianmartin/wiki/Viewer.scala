@@ -16,7 +16,12 @@ object Viewer {
     sb.append("url: " + wli.url + "\n")
     sb.append("mention.head: " + wli.mentions.head + "\n")
     sb.append("rareWords.head: " + wli.rareWords.head + "\n")
-    sb.append("raw length: " + wli.content.raw.limit() + "\n")
+    
+    val rawLength = wli.content.raw match {
+      case Some(raw) => raw.limit()
+      case None => -1
+    }
+    sb.append("raw length: " + rawLength + "\n")
     
     sb.toString
     
