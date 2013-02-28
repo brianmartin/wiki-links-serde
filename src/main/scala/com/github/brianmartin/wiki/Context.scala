@@ -1,7 +1,7 @@
 package com.github.brianmartin.wiki
 
 import org.jsoup.nodes.Element
-import edu.umass.cs.iesl.wiki.{Mention, Context}
+import edu.umass.cs.iesl.wiki.{Mention, Context=>ContextWrapper}
 import java.util.regex.Pattern
 import org.jsoup.Jsoup
 import collection.mutable
@@ -21,7 +21,7 @@ object Context {
    * @return  Context
    */
   @annotation.tailrec
-  def getContext(anchor:Element,parent:Element):Context = {
+  def getContext(anchor:Element,parent:Element):ContextWrapper = {
     //Split the actual html content for this element by the anchor's actual html
     val part = parent.html().split(Pattern.quote(anchor.toString))
     val left = if (part.length>0) Jsoup.parse(part(0)).text() else ""
@@ -31,7 +31,7 @@ object Context {
       val leftStr = if (split.length<=window_size) left else split.takeRight(window_size).mkString(" ")
       split = right.split("""\s+""")
       val rightStr = if (split.length<=window_size) right else split.takeRight(window_size).mkString(" ")
-      return Context(leftStr,rightStr,anchor.text())
+      return ContextWrapper(leftStr,rightStr,anchor.text())
     }
     else{
       getContext(anchor,parent.parent())
@@ -61,13 +61,16 @@ object Context {
               """(?<=http://en.wikipedia.org/wiki/)(.*)(?!/)""".r.findFirstIn(wikiUrl).get
             }
           }
-          val idOp = title2id.get(StringUtils.stripEnd(title.toLowerCase,"_"))
-          mentions+= wiki.Mention(mention.wikiUrl, mention.anchorText,mention.rawTextOffset,
+          //TODO remove comments
+          //val idOp = title2id.get(StringUtils.stripEnd(title.toLowerCase,"_"))
+          mentions+= Mention(mention.wikiUrl, mention.anchorText,mention.rawTextOffset,
             Some(getContext(anchor,anchor.parent())),
-            idOp match {
-              case Some(id) => wiki2fb.get(id)
-              case None => None
-            })
+            None
+//            idOp match {
+//              case Some(id) => wiki2fb.get(id)
+//              case None => None
+//            }
+          )
         }
       }
     }
