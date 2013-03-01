@@ -25,12 +25,20 @@ object Runner {
     
     println("Chunk dir: " + pagesChunkDir.getAbsolutePath())
     // for all the files in each chunk that don't have an extension:
-    for ((pageFile,i) <- pagesChunkDir.listFiles().filter(f => !f.getName().contains(".")).map { f => f -> f.getName.toInt } ) {
-      println(i + "\t" + pageFile.getAbsolutePath())
+    // [chunks are of size 1000]
+    val chunkSize  = 1000
+    val chunkStart = pagesChunkDir.getName().toInt * chunkSize
+    val chunkEnd   = chunkStart + chunkSize
+    
+    for (i <- chunkStart until chunkEnd) {
+      // get page file option [could probably be more concise]
+      val pageFile = pageFileOption(pagesChunkDir, i)
+      
+      // make and serialize out the thrift file
       try {
         val googleFile = new File(googleDir.getAbsolutePath() + ("/%09d" format i))
         val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%09d.thrift" format i))
-	    thriftFile.createNewFile()
+        thriftFile.createNewFile()
         serialize(i, pageFile, googleFile, thriftFile)
       } catch {
         case e => {
@@ -40,71 +48,95 @@ object Runner {
           println(e.getStackTraceString)
         }
       }
-	}
-
+    }
   }
+    
   
+  def pageFileOption(pagesChunkDir: File, i: Int): Option[File] = {
+    var res: Option[File] = None
+    try {
+      val f = new File("%s/%09d" format (pagesChunkDir, i))
+      if (f.exists())
+        res = Some(f)
+      else
+        println("Page file not found: %s" format f.getName)
+    }
+    catch {
+      case _ => res = None
+    }
+    res
+  }
   
   def readFileString(f: File): String = {
-    val bb = readRawFile(f)
-    val str = Charset.defaultCharset().decode(bb).toString()
-    bb.rewind()
-    str
+    readRawFile(f) match {
+      case Some(bb) => {
+        val str = Charset.defaultCharset().decode(bb).toString()
+        bb.rewind()
+        str
+      }
+      case None => ""
+    }
   }
   
-  def readRawFile(f: File): ByteBuffer = {
-    
-    val stream = new FileInputStream(f)
+  def readRawFile(f: File): Option[ByteBuffer] = {
+    var res: Option[ByteBuffer] = None
+    var stream: FileInputStream = null
     try {
+      val stream = new FileInputStream(f)
       val fc = stream.getChannel()
       val bArray = Array.ofDim[Byte](f.length.toInt)
       val bb = ByteBuffer.wrap(bArray)
       fc.read(bb)
       bb.rewind()
-      return bb
+      res = Some(bb)
     }
     finally {
-      stream.close()
+      if (stream ne null)
+        stream.close()
     } 
+    res
   }
 
-  def serialize(id: Int, pageFile: File, googleFile: File, thriftFile: File): Unit = {
+  def serialize(id: Int, pageFile: Option[File], googleFile: File, thriftFile: File): Unit = {
     
-    val rawHTML = readRawFile(pageFile)
+    val rawHtml: Option[ByteBuffer] = {
+      pageFile match {
+        case Some(pageFile) => readRawFile(pageFile)
+        case None => None
+      }
+    }
     
-	serialize(
-	    id = id,
-	    rawHTML = rawHTML,
-	    outFile = thriftFile,
-	    googleAnnotations = googleAnnotations(googleFile)
-	  )
-  }
-  
-  def serialize(id: Int, rawHTML: ByteBuffer, outFile: File, googleAnnotations: (String, Seq[Mention], Seq[RareWord])): Unit = {
+    val html = rawHtml match {
+      case Some(rawHtml) => {
+        val res = Charset.defaultCharset().decode(rawHtml).toString()
+        rawHtml.rewind()
+        res
+      }
+      case None => ""
+    }
     
-    val html = Charset.defaultCharset().decode(rawHTML).toString()
-    rawHTML.rewind()
+    val (gurl, gmentions, grarewords) = googleAnnotations(googleFile)
     
-	val s = WikiLinkItem(
-	   docId = id,
-	   url = googleAnnotations._1,
-	   content = PageContentItem(
-	       raw = rawHTML,
-	       fullText = FullText(html),
-	       articleText = ArticleText(html),
-	       dom = CleanDOM(html)
-	   ),
-	   rareWords = googleAnnotations._3,
-	   mentions = googleAnnotations._2
-	)
-	
-    val (outStream, outProto) = ThriftSerializerFactory.getWriter(outFile)
+    val s = WikiLinkItem(
+       docId = id,
+       url = gurl,
+       content = PageContentItem(
+           rawHtml,
+           FullText(html),
+           ArticleText(html),
+           CleanDOM(html)
+       ),
+       rareWords = grarewords,
+       mentions = gmentions
+    )
+
+    val (outStream, outProto) = ThriftSerializerFactory.getWriter(thriftFile)
     
     s.write(outProto)
     
     outStream.flush()
     outStream.close()
-
+    
   }
   
   val URLMatch = "URL\t(.*)".r

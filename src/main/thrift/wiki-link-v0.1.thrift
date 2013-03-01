@@ -3,11 +3,11 @@ namespace py edu.umass.cs.iesl.wiki
 
 struct PageContentItem {
   // original download
-  1: binary raw, 
-  
+  1: optional binary raw,
+
   // all visible text, e.g. from boilerpipe 1.2.0 KeepEverything
   2: optional string fullText, 
-  
+
   // all visible text, e.g. from boilerpipe 1.2.0 Article text extractor
   3: optional string articleText, 
 

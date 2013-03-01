@@ -20,7 +20,7 @@ object PageContentItem extends ThriftStructCodec[PageContentItem] {
   def apply(_iprot: TProtocol): PageContentItem = decode(_iprot)
 
   def apply(
-    `raw`: ByteBuffer,
+    `raw`: Option[ByteBuffer] = None,
     `fullText`: Option[String] = None,
     `articleText`: Option[String] = None,
     `dom`: Option[String] = None
@@ -31,7 +31,7 @@ object PageContentItem extends ThriftStructCodec[PageContentItem] {
     `dom`
   )
 
-  def unapply(_item: PageContentItem): Option[Product4[ByteBuffer, Option[String], Option[String], Option[String]]] = Some(_item)
+  def unapply(_item: PageContentItem): Option[Product4[Option[ByteBuffer], Option[String], Option[String], Option[String]]] = Some(_item)
 
   object Immutable extends ThriftStructCodec[PageContentItem] {
     def encode(_item: PageContentItem, _oproto: TProtocol) { _item.write(_oproto) }
@@ -103,7 +103,7 @@ object PageContentItem extends ThriftStructCodec[PageContentItem] {
       }
       _iprot.readStructEnd()
       new Immutable(
-        `raw`,
+        if (_got_raw) Some(`raw`) else None,
         if (_got_fullText) Some(`fullText`) else None,
         if (_got_articleText) Some(`articleText`) else None,
         if (_got_dom) Some(`dom`) else None
@@ -117,7 +117,7 @@ object PageContentItem extends ThriftStructCodec[PageContentItem] {
    * new instances.
    */
   class Immutable(
-    val `raw`: ByteBuffer,
+    val `raw`: Option[ByteBuffer] = None,
     val `fullText`: Option[String] = None,
     val `articleText`: Option[String] = None,
     val `dom`: Option[String] = None
@@ -130,7 +130,7 @@ object PageContentItem extends ThriftStructCodec[PageContentItem] {
    */
   trait Proxy extends PageContentItem {
     protected def _underlyingPageContentItem: PageContentItem
-    def `raw`: ByteBuffer = _underlyingPageContentItem.`raw`
+    def `raw`: Option[ByteBuffer] = _underlyingPageContentItem.`raw`
     def `fullText`: Option[String] = _underlyingPageContentItem.`fullText`
     def `articleText`: Option[String] = _underlyingPageContentItem.`articleText`
     def `dom`: Option[String] = _underlyingPageContentItem.`dom`
@@ -138,12 +138,12 @@ object PageContentItem extends ThriftStructCodec[PageContentItem] {
 }
 
 trait PageContentItem extends ThriftStruct
-  with Product4[ByteBuffer, Option[String], Option[String], Option[String]]
+  with Product4[Option[ByteBuffer], Option[String], Option[String], Option[String]]
   with java.io.Serializable
 {
   import PageContentItem._
 
-  def `raw`: ByteBuffer
+  def `raw`: Option[ByteBuffer]
   def `fullText`: Option[String]
   def `articleText`: Option[String]
   def `dom`: Option[String]
@@ -156,8 +156,8 @@ trait PageContentItem extends ThriftStruct
   override def write(_oprot: TProtocol) {
     validate()
     _oprot.writeStructBegin(Struct)
-    if (true) {
-      val `raw_item` = `raw`
+    if (`raw`.isDefined) {
+      val `raw_item` = `raw`.get
       _oprot.writeFieldBegin(RawField)
       _oprot.writeBinary(`raw_item`)
       _oprot.writeFieldEnd()
@@ -185,7 +185,7 @@ trait PageContentItem extends ThriftStruct
   }
 
   def copy(
-    `raw`: ByteBuffer = this.`raw`,
+    `raw`: Option[ByteBuffer] = this.`raw`,
     `fullText`: Option[String] = this.`fullText`,
     `articleText`: Option[String] = this.`articleText`,
     `dom`: Option[String] = this.`dom`

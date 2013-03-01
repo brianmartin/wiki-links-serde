@@ -19,8 +19,7 @@ object RerunSizeZeroThrifts {
 
     for (id <- idsToRerun) {
       try {
-        val pageFile = new File(pagesDir.getAbsolutePath() + "/%06d/%d".format(id / 1000,id))
-        println(id + "\t" + pageFile.getAbsolutePath())
+        val pageFile = pageFileOption(pagesDir, id)
         val googleFile = new File(googleDir.getAbsolutePath() + ("/%09d" format id))
         val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%09d.thrift" format id))
         thriftFile.delete()
