@@ -25,7 +25,7 @@ object Context {
    * @return
    */
 
-  def addContextAndFreebaseId(wli:WikiLinkItem):Seq[Mention]={
+  def addContextAndFreebaseId(wli:WikiLinkItem):WikiLinkItem={
     def newMentionArray = ArrayBuffer[Mention]()
 
     val _map = mutable.HashMap[String,ArrayBuffer[Mention]]()
@@ -36,9 +36,9 @@ object Context {
     wli.content.dom match {
       case Some(dom) => {
         val mentions = processDom(dom,_map,wli.docId)
-        mentions
+        wli.copy(`mentions`= mentions)
       }
-      case None => wli.mentions
+      case None => wli
     }
   }
 
@@ -133,7 +133,7 @@ object Context {
   def loadTitleIdMap(titleIdFile:String) : HashMap[String,String]={
     println("Loading from "+titleIdFile+"...")
     val map = HashMap[String,String]()
-    for(line<-Source.fromFile(titleIdFile).getLines()){
+    for(line<-Source.fromFile(titleIdFile,"UTF-8").getLines()){
       val split = line.split("\t")
       if(split.size ==2) map(split(0).toLowerCase) = split(1)
     }
