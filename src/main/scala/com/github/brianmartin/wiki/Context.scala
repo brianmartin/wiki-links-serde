@@ -28,9 +28,10 @@ object Context {
   def addContextAndFreebaseId(wli:WikiLinkItem):WikiLinkItem={
     def newMentionArray = ArrayBuffer[Mention]()
 
-    val _map = mutable.HashMap[String,ArrayBuffer[Mention]]()
+    val _map = mutable.HashMap[String,(ArrayBuffer[Mention],Int)]()
     wli.mentions.foreach(mention=>{
-      _map(pruneUrl(mention._1)) = (_map.getOrElseUpdate(pruneUrl(mention._1),newMentionArray)+=mention)
+      val res = _map.getOrElseUpdate(pruneUrl(mention._1),(newMentionArray,0))
+      _map(pruneUrl(mention._1)) = Tuple2(res._1+=mention,res._2+1)
     })
 
     wli.content.dom match {
@@ -44,16 +45,20 @@ object Context {
 
   /**
    * Recursively find a large enough context for the anchor by looking at the parents
+   * Implicit int i is used when dealing with situations where multiple multiple mention
+   * exist for the same anchor tag.
    * @param anchor
    * @param parent
    * @return  Context
    */
   @annotation.tailrec
-  def getContext(anchor:Element,parent:Element):ContextWrapper = {
+  def getContext(anchor:Element,parent:Element)(implicit i:Int):ContextWrapper = {
     //Split the actual html content for this element by the anchor's actual html
     val part = parent.html().split(Pattern.quote(anchor.toString))
-    val left = if (part.length>0) Jsoup.parse(part(0)).text() else ""
-    val right = if (part.length>1) Jsoup.parse(part(1)).text() else ""
+    val numParts = i+1
+    val (lind,rind)=if (part.length>=numParts) (i-1,i) else (0,1)
+    val left = if (part.length>0) Jsoup.parse(part(lind)).text() else ""
+    val right = if (part.length>1) Jsoup.parse(part(rind)).text() else ""
     if ((left.split("""\s+""").length>=window_size && right.split("""\s+""").length>=window_size) || parent.parent() == null){
       var split = left.split("""\s+""")
       val leftStr = if (split.length<=window_size) left else split.takeRight(window_size).mkString(" ")
@@ -66,7 +71,7 @@ object Context {
     }
   }
 
-  def processDom(html:String,_map:mutable.HashMap[String,ArrayBuffer[Mention]],id:Int)
+  def processDom(html:String,_map:mutable.HashMap[String,(ArrayBuffer[Mention],Int)],id:Int)
   :Seq[Mention] = {
     val Matcher = """.+/(.*)""".r
     val doc = Jsoup.parse(html)
@@ -86,9 +91,11 @@ object Context {
            * hence when a url is matched it should be removed list so it's not matched twice
            * when the array is empty remove corresponding map entry
            */
-          val mention = value.remove(0)
-          if(value.length==0) _map.remove(prunedHref)
+          val mention = value._1.remove(0)
+          if(value._1.length==0) _map.remove(prunedHref)
           else _map(prunedHref) = value
+          //Implicit value to be passed to getContext
+          implicit val index_within_map_array = value._2-value._1.length
           //some urls end with "/" which should be removed
           val wikiUrl = StringUtils.stripEnd(mention.wikiUrl,"/")
           //extract wiki page title from the url
@@ -112,7 +119,7 @@ object Context {
       }
     }
     //add the mentions not found in page back with empty context and freebase id
-    mentions++=_map.values.flatten
+    mentions++=_map.values.map(_._1).flatten
   }
 
   // pruning is necessary because sites might garbled urls like: <a href="//en.wikipedia...."> (that is, no "http:")
