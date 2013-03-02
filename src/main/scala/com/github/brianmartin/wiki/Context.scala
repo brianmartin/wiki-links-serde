@@ -14,7 +14,7 @@ import io.Source
  * @date: 2/27/13
  */
 object Context {
-  val window_size = 15
+  val window_size = 25
   val redirectsMap =  loadRedirectsMap("/iesl/canvas/harshal/data/wikipedia/extraction/redirects/redirects_final.tsv")
   val title2id = loadTitleIdMap("/iesl/canvas/harshal/data/wikipedia/wpid-title-mapping-new.csv")
   val wiki2fb = loadWikiToFreebaseMap("/iesl/canvas/harshal/data/freebase/freebase-wex-2012-08-06-freebase_wpid.tsv")
