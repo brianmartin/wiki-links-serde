@@ -117,7 +117,7 @@ object Runner {
     
     val (gurl, gmentions, grarewords) = googleAnnotations(googleFile)
     
-    val s = WikiLinkItem(
+    var s = WikiLinkItem(
        docId = id,
        url = gurl,
        content = PageContentItem(
@@ -129,6 +129,12 @@ object Runner {
        rareWords = grarewords,
        mentions = gmentions
     )
+
+    try {
+      sWithCtx = addContextAndFreebaseId(s)
+    } catch {
+      case e => println("caught context exception: " + e.getMessage + e.getStackTraceString + e.getCause)
+    }
 
     val (outStream, outProto) = ThriftSerializerFactory.getWriter(thriftFile)
     
