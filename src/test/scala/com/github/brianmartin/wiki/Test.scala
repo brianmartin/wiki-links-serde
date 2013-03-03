@@ -17,7 +17,7 @@ class ThriftSpec extends FlatSpec {
 	    docId = 1,
 	    url = "http://somewhere.com/page.html",
 	    content = PageContentItem(
-	        raw = ByteBuffer.wrap("raw html".getBytes)
+	        raw = Some(ByteBuffer.wrap("raw html".getBytes))
 	    )
 	 )
 
