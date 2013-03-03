@@ -131,7 +131,8 @@ object Runner {
     )
 
     try {
-      sWithCtx = addContextAndFreebaseId(s)
+      val sWithCtx = addContextAndFreebaseId(s)
+      s = sWithCtx
     } catch {
       case e => println("caught context exception: " + e.getMessage + e.getStackTraceString + e.getCause)
     }
