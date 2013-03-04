@@ -27,7 +27,7 @@ object Runner {
     // for all the files in each chunk that don't have an extension:
     // [chunks are of size 1000]
     val chunkSize  = 1000
-    val chunkStart = pagesChunkDir.getName().toInt * chunkSize
+    val chunkStart = pagesChunkDir.getName().toInt * chunkSize + 1
     val chunkEnd   = chunkStart + chunkSize
     
     for (i <- chunkStart until chunkEnd) {
@@ -37,8 +37,8 @@ object Runner {
       // make and serialize out the thrift file
       try {
         val googleFile = new File(googleDir.getAbsolutePath() + ("/%09d" format i))
-        new File(thriftDir.getAbsolutePath() + ("/%06d".format(i % chunkSize))).mkdir()
-        val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%06d/%09d.thrift".format(i % chunkSize, i)))
+        new File(thriftDir.getAbsolutePath() + ("/%06d".format((i / chunkSize).toInt))).mkdir()
+        val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%06d/%09d.thrift".format((i / chunkSize).toInt, i)))
         thriftFile.createNewFile()
         serialize(i, pageFile, googleFile, thriftFile)
       } catch {
@@ -56,11 +56,11 @@ object Runner {
   def pageFileOption(pagesChunkDir: File, i: Int): Option[File] = {
     var res: Option[File] = None
     try {
-      val f = new File("%s/%09d" format (pagesChunkDir, i))
+      val f = new File("%s/%d" format (pagesChunkDir.getAbsolutePath(), i))
       if (f.exists())
         res = Some(f)
       else
-        println("Page file not found: %s" format f.getName)
+        println("Page file not found: %s" format f.getAbsolutePath())
     }
     catch {
       case _ => res = None
