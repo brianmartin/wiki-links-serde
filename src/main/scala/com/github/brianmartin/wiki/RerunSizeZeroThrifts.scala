@@ -21,7 +21,7 @@ object RerunSizeZeroThrifts {
       try {
         val pageFile = pageFileOption(pagesDir, id)
         val googleFile = new File(googleDir.getAbsolutePath() + ("/%09d" format id))
-        val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%09d.thrift" format id))
+        val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%09d.thrift.gz" format id))
         thriftFile.delete()
         thriftFile.createNewFile()
         serialize(id, pageFile, googleFile, thriftFile)

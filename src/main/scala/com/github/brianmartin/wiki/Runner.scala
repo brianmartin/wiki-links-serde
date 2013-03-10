@@ -38,7 +38,7 @@ object Runner {
       try {
         val googleFile = new File(googleDir.getAbsolutePath() + ("/%09d" format (i - 1)))
         new File(thriftDir.getAbsolutePath() + ("/%06d".format((i / chunkSize).toInt))).mkdir()
-        val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%06d/%09d.thrift".format((i / chunkSize).toInt, i)))
+        val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%06d/%09d.thrift.gz".format((i / chunkSize).toInt, i)))
         thriftFile.createNewFile()
         serialize(i, pageFile, googleFile, thriftFile)
       } catch {
