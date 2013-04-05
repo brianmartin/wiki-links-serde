@@ -18,9 +18,9 @@ import java.util.zip.GZIPInputStream
  */
 object Context {
   val window_size = 25
-  lazy val redirectsMap =  Loaders.loadRedirectsMap("/iesl/canvas/harshal/data/wikipedia/extraction/redirects/redirects_final.tsv")
-  lazy val title2id = Loaders.loadTitleIdMap("/iesl/canvas/harshal/data/wikipedia/wpid-title-mapping-new.csv")
-  lazy val wiki2fb = Loaders.loadWikiToFreebaseMap("/iesl/canvas/harshal/data/freebase/freebase-wex-2012-08-06-freebase_wpid.tsv")
+  lazy val redirectsMap =  Loaders.loadRedirectsMap("redirects.tsv.gz")
+  lazy val title2id = Loaders.loadTitleIdMap("wpid-title-mapping.tsv.gz")
+  lazy val wiki2fb = Loaders.loadWikiToFreebaseMap("freebase-wex-2012-08-06-freebase_wpid.tsv.gz")
 
   /**
    * takes a wikilinkitem and returns a seq[Mention] with context and freebaseid filled in
