@@ -27,7 +27,7 @@ object Runner {
     // for all the files in each chunk that don't have an extension:
     // [chunks are of size 1000]
     val chunkSize  = 1000
-    val chunkStart = pagesChunkDir.getName().toInt * chunkSize + 1
+    val chunkStart = pagesChunkDir.getName().toInt * chunkSize + 1 
     val chunkEnd   = chunkStart + chunkSize
     
     for (i <- chunkStart until chunkEnd) {
@@ -36,9 +36,9 @@ object Runner {
       
       // make and serialize out the thrift file
       try {
-        val googleFile = new File(googleDir.getAbsolutePath() + ("/%09d" format i))
+        val googleFile = new File(googleDir.getAbsolutePath() + ("/%09d" format (i - 1)))
         new File(thriftDir.getAbsolutePath() + ("/%06d".format((i / chunkSize).toInt))).mkdir()
-        val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%06d/%09d.thrift".format((i / chunkSize).toInt, i)))
+        val thriftFile = new File(thriftDir.getAbsolutePath() + ("/%06d/%09d.thrift.gz".format((i / chunkSize).toInt, i)))
         thriftFile.createNewFile()
         serialize(i, pageFile, googleFile, thriftFile)
       } catch {
