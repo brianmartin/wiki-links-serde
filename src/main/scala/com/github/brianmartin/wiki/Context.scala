@@ -1,13 +1,16 @@
 package com.github.brianmartin.wiki
 
 import org.jsoup.nodes.Element
-import edu.umass.cs.iesl.wiki.{Context => ContextWrapper, PageContentItem, WikiLinkItem, Mention}
+import edu.umass.cs.iesl.wiki.{Context => ContextWrapper, WikiLinkItem, Mention}
 import java.util.regex.Pattern
 import org.jsoup.Jsoup
 import collection.mutable
 import collection.mutable.{HashMap, ArrayBuffer}
 import org.apache.commons.lang.StringUtils
 import io.Source
+import scala.collection.JavaConverters._
+import java.io.{InputStreamReader, BufferedReader}
+import java.util.zip.GZIPInputStream
 
 /**
  * @author harshal
@@ -15,9 +18,9 @@ import io.Source
  */
 object Context {
   val window_size = 25
-  val redirectsMap =  loadRedirectsMap("/iesl/canvas/harshal/data/wikipedia/extraction/redirects/redirects_final.tsv")
-  val title2id = loadTitleIdMap("/iesl/canvas/harshal/data/wikipedia/wpid-title-mapping-new.csv")
-  val wiki2fb = loadWikiToFreebaseMap("/iesl/canvas/harshal/data/freebase/freebase-wex-2012-08-06-freebase_wpid.tsv")
+  lazy val redirectsMap =  Loaders.loadRedirectsMap("/iesl/canvas/harshal/data/wikipedia/extraction/redirects/redirects_final.tsv")
+  lazy val title2id = Loaders.loadTitleIdMap("/iesl/canvas/harshal/data/wikipedia/wpid-title-mapping-new.csv")
+  lazy val wiki2fb = Loaders.loadWikiToFreebaseMap("/iesl/canvas/harshal/data/freebase/freebase-wex-2012-08-06-freebase_wpid.tsv")
 
   /**
    * takes a wikilinkitem and returns a seq[Mention] with context and freebaseid filled in
@@ -77,6 +80,13 @@ object Context {
     val doc = Jsoup.parse(html)
     //Get all the anchor elements from the dom to compare with wikiurl
     val anchors = doc.getElementsByTag("a").iterator()
+
+    //Do this only if context was not found for some mentions in the page
+    lazy val anchorMap = {
+      val temp = anchors.asScala.toSeq.filter(a=> (a.attr("href").indexOf("wikipedia.org")!= -1)).groupBy(g=>g.text().trim)
+      collection.mutable.HashMap(temp.toSeq:_*)
+    }
+
     val mentions = ArrayBuffer[Mention]()
     while(!_map.isEmpty && anchors.hasNext){
       val anchor = anchors.next()
@@ -97,31 +107,54 @@ object Context {
           else _map((prunedHref,anchorText)) = value
           //Implicit value to be passed to getContext
           implicit val index_within_map_array = value._2-value._1.length
-          //some urls end with "/" which should be removed
-          val wikiUrl = StringUtils.stripEnd(mention.wikiUrl,"/")
-          //extract wiki page title from the url
-          val title = wikiUrl match {
-            case Matcher(title) => title
-            case _ => {
-              """(?<=http://en.wikipedia.org/wiki/)(.*)(?!/)""".r.findFirstIn(wikiUrl).get
-            }
-          }
-          //get the wikipedia id for the title
-          val idOp = title2id.get(StringUtils.stripEnd(title.toLowerCase,"_"))
+
+          val fbId = getFbId(mention.wikiUrl)
+
           //generate a mention with context and fb id filed in
-          mentions+= Mention(mention.wikiUrl, mention.anchorText,mention.rawTextOffset,
-            Some(getContext(anchor,anchor.parent())),
-            idOp match {
-              case Some(id) => wiki2fb.get(redirectsMap.getOrElse(id,id))
-              case None => None
-            }
-          )
+          mentions+= mention.copy(`context`=Some(getContext(anchor,anchor.parent())),
+            `freebaseId`=fbId)
         }
       }
     }
     //add the mentions not found in page back with empty context and freebase id
-    mentions++=_map.values.map(_._1).flatten
+    mentions++=_map.values.map(m=>{
+      m._1.map(mention=>{
+        //add freebase id
+        val fbId = getFbId(mention.wikiUrl)
+        val anchors = anchorMap.get(mention.`anchorText`.trim)
+        val contextOp = anchors match {
+          case Some(as) =>{
+            if(as.size>1) {
+              anchorMap.update(mention.`anchorText`.trim,as.tail)
+            }
+            Some(Context.getContext(as.head,as.head.parent())(as.size))
+          }
+          case None => None
+        }
+
+        mention.copy(`context`=contextOp,`freebaseId`=fbId)
+      })
+    }).flatten
   }
+
+  def getFbId(url:String):Option[String]={
+    val Matcher = """.+/(.*)""".r
+    val wikiUrl = StringUtils.stripEnd(url,"/")
+    //extract wiki page title from the url
+    val title = wikiUrl match {
+      case Matcher(temp) => temp
+      case _ => """(?<=http://en.wikipedia.org/wiki/)(.*)(?!/)""".r.findFirstIn(wikiUrl).get
+    }
+
+    //get the wikipedia id for the title
+    val idOp = title2id.get(title.replaceAll("_"," ").trim.toLowerCase)
+    val fbId = idOp match {
+      case Some(id) => wiki2fb.get(redirectsMap.getOrElse(id,id))
+      case None => None
+    }
+    fbId
+  }
+
 
   // pruning is necessary because sites might garbled urls like: <a href="//en.wikipedia...."> (that is, no "http:")
   def pruneUrl(url: String): String = {
@@ -129,72 +162,85 @@ object Context {
     if(index != -1) url.substring(index) else ""
   }
 
+
+  /**
+   * Test case, uncomment and run
+   */
+  //  def main(args:Array[String]){
+  //    val wli = edu.umass.cs.iesl.wiki.WikiLinkItem(
+  //      docId = 1,
+  //      url = "",
+  //      content = PageContentItem(
+  //        raw = null,
+  //        fullText = null,
+  //        articleText = null,
+  //        dom = Some("""<!DOCTYPE html><html><head prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# githubog: http://ogp.me/ns/fb/githubog#"><title></title></head>"""+
+  //                  """<body class="logged_in page-profile macintosh  env-production  "><div id="wrapper"><p><a href="http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy">Baron Augustin-Louis Cauchy</a> was a French mathematician who was an early pioneer of analysis. He started the project of formulating and proving the theorems of infinitesimal calculus in a rigorous manner, rejecting the heuristic principle of the generality of algebra exploited by earlier authors.</p>"""+
+  //                  """<p>"More concepts and theorems have been named for Cauchy than for any other mathematician (in elasticity alone there are sixteen concepts and theorems named for <a href="http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy">Cauchy</a>)."</p>"""+
+  //                    """<p>Cauchy was a prolific writer; he wrote approximately eight hundred research articles and five complete textbooks. He was a devout Roman Catholic, strict Bourbon royalist, and a close associate of the Jesuit order.</p>"""+
+  //                    """<p><a href="http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy"> Cauchy </a> was the son of Louis François Cauchy (1760–1848) and Marie-Madeleine Desestre. Cauchy had two brothers, Alexandre Laurent <a href="http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy"> Cauchy </a> (1792–1857), who became a president of a division of the court of appeal in 1847, and a judge of the court of cassation in 1849; and Eugene François Cauchy (1802–1877), a publicist who also wrote several mathematical works."""+
+  //                """Cauchy married Aloise de Bure in 1818. She was a close relative of the publisher who published most of Cauchy's works. By her he had two daughters, Marie Françoise Alicia (1819) and Marie Mathilde (1823).</p>"""+
+  //                    """</div></body></html>""")
+  //      ),
+  //      rareWords = null,
+  //      mentions = Seq(Mention(
+  //      "http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy",
+  //      "Baron Augustin-Louis Cauchy",
+  //      0),
+  //        Mention(
+  //          "http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy",
+  //          "Cauchy",
+  //          0),
+  //        Mention(
+  //          "http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy",
+  //          "Cauchy",
+  //          0),
+  //        Mention(
+  //          "http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy",
+  //          "Cauchy",
+  //          0))
+  //    )
+  //    addContextAndFreebaseId(wli).`mentions`.foreach(println(_))
+  //
+  //  }
+}
+
+object Loaders {
   def loadWikiToFreebaseMap(wikiToFreeBaseFile:String) : HashMap[String,String] ={
     println("Loading from "+wikiToFreeBaseFile+"...")
     val map = HashMap[String,String]()
-    for(line<-Source.fromFile(wikiToFreeBaseFile).getLines()){
+    val reader = new BufferedReader(new GZIPInputStream(this.getClass.getResourceAsStream(wikiToFreeBaseFile)))
+    var line = reader.readLine()
+    while(line!=null){
       val split = line.split("\t")
       if(split.size==2) map(split(1))=split(0)
+      line = reader.readLine()
     }
     map
   }
+
   def loadTitleIdMap(titleIdFile:String) : HashMap[String,String]={
     println("Loading from "+titleIdFile+"...")
     val map = HashMap[String,String]()
-    for(line<-Source.fromFile(titleIdFile,"UTF-8").getLines()){
+    val reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(this.getClass.getResourceAsStream(wikiToFreeBaseFile)),"UTF-8"))
+    var line = reader.readLine()
+    while(line!=null){
       val split = line.split("\t")
       if(split.size ==2) map(split(0).toLowerCase) = split(1)
+      line = reader.readLine()
     }
     map
   }
   def loadRedirectsMap(file:String) : HashMap[String,String] = {
     println("Loading from "+file+"...")
     val map = HashMap[String,String]()
-    for(line<-Source.fromFile(file).getLines()){
+    val reader = new BufferedReader(new GZIPInputStream(this.getClass.getResourceAsStream(wikiToFreeBaseFile)))
+    var line = reader.readLine()
+    while(line!=null){
       val split = line.split("\t")
       if(split.size ==2) map(split(0)) = split(1)
+      line = reader.readLine()
     }
     map
   }
-
-  /**
-   * Test case, uncomment and run
-    */
-//  def main(args:Array[String]){
-//    val wli = edu.umass.cs.iesl.wiki.WikiLinkItem(
-//      docId = 1,
-//      url = "",
-//      content = PageContentItem(
-//        raw = null,
-//        fullText = null,
-//        articleText = null,
-//        dom = Some("""<!DOCTYPE html><html><head prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# githubog: http://ogp.me/ns/fb/githubog#"><title></title></head>"""+
-//                  """<body class="logged_in page-profile macintosh  env-production  "><div id="wrapper"><p><a href="http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy">Baron Augustin-Louis Cauchy</a> was a French mathematician who was an early pioneer of analysis. He started the project of formulating and proving the theorems of infinitesimal calculus in a rigorous manner, rejecting the heuristic principle of the generality of algebra exploited by earlier authors.</p>"""+
-//                  """<p>"More concepts and theorems have been named for Cauchy than for any other mathematician (in elasticity alone there are sixteen concepts and theorems named for <a href="http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy">Cauchy</a>)."</p>"""+
-//                    """<p>Cauchy was a prolific writer; he wrote approximately eight hundred research articles and five complete textbooks. He was a devout Roman Catholic, strict Bourbon royalist, and a close associate of the Jesuit order.</p>"""+
-//                    """<p><a href="http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy"> Cauchy </a> was the son of Louis François Cauchy (1760–1848) and Marie-Madeleine Desestre. Cauchy had two brothers, Alexandre Laurent <a href="http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy"> Cauchy </a> (1792–1857), who became a president of a division of the court of appeal in 1847, and a judge of the court of cassation in 1849; and Eugene François Cauchy (1802–1877), a publicist who also wrote several mathematical works."""+
-//                """Cauchy married Aloise de Bure in 1818. She was a close relative of the publisher who published most of Cauchy's works. By her he had two daughters, Marie Françoise Alicia (1819) and Marie Mathilde (1823).</p>"""+
-//                    """</div></body></html>""")
-//      ),
-//      rareWords = null,
-//      mentions = Seq(Mention(
-//      "http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy",
-//      "Baron Augustin-Louis Cauchy",
-//      0),
-//        Mention(
-//          "http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy",
-//          "Cauchy",
-//          0),
-//        Mention(
-//          "http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy",
-//          "Cauchy",
-//          0),
-//        Mention(
-//          "http://en.wikipedia.org/wiki/Augustin-Louis_Cauchy",
-//          "Cauchy",
-//          0))
-//    )
-//    addContextAndFreebaseId(wli).`mentions`.foreach(println(_))
-//
-//  }
 }
