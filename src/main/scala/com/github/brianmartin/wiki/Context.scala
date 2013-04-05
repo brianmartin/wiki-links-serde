@@ -209,7 +209,7 @@ object Loaders {
   def loadWikiToFreebaseMap(wikiToFreeBaseFile:String) : HashMap[String,String] ={
     println("Loading from "+wikiToFreeBaseFile+"...")
     val map = HashMap[String,String]()
-    val reader = new BufferedReader(new GZIPInputStream(this.getClass.getResourceAsStream(wikiToFreeBaseFile)))
+    val reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(this.getClass.getResourceAsStream(wikiToFreeBaseFile))))
     var line = reader.readLine()
     while(line!=null){
       val split = line.split("\t")
@@ -222,7 +222,7 @@ object Loaders {
   def loadTitleIdMap(titleIdFile:String) : HashMap[String,String]={
     println("Loading from "+titleIdFile+"...")
     val map = HashMap[String,String]()
-    val reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(this.getClass.getResourceAsStream(wikiToFreeBaseFile)),"UTF-8"))
+    val reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(this.getClass.getResourceAsStream(titleIdFile)),"UTF-8"))
     var line = reader.readLine()
     while(line!=null){
       val split = line.split("\t")
@@ -234,7 +234,7 @@ object Loaders {
   def loadRedirectsMap(file:String) : HashMap[String,String] = {
     println("Loading from "+file+"...")
     val map = HashMap[String,String]()
-    val reader = new BufferedReader(new GZIPInputStream(this.getClass.getResourceAsStream(wikiToFreeBaseFile)))
+    val reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(this.getClass.getResourceAsStream(file))))
     var line = reader.readLine()
     while(line!=null){
       val split = line.split("\t")
