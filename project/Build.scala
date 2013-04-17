@@ -36,6 +36,7 @@ object Thrifting1Build extends Build {
           "de.l3s.boilerpipe" % "boilerpipe" % "1.2.0",
           // Tagsoup
           "org.ccil.cowan.tagsoup" % "tagsoup" % "1.2",
+          "org.jsoup" % "jsoup" % "1.7.1",
           // JSON
           "net.liftweb" %% "lift-json" % "2.5-M1",
           // Guava
